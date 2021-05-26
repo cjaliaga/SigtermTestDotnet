@@ -72,7 +72,7 @@ namespace WebApplication3
                 client.Send(new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
-                    RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1")
+                    RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING")
                 });
 
                 Console.WriteLine("NOOOOOOOOOOOOOOOOOOOOOOO! BYEEEEEEEEEEEEEEEEEE :O");
@@ -96,7 +96,7 @@ namespace WebApplication3
                 client.Send(new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
-                    RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1")
+                    RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPED")
                 });
                 Console.WriteLine("I'M DONE!");
             });
