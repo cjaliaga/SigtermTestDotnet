@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -55,6 +56,18 @@ namespace WebApplication3
 
             hostApplicationLifetime.ApplicationStopping.Register(() =>
             {
+                try
+                {
+                    var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
+                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}.txt");
+                    writter.Write($"{DateTime.UtcNow} => ApplicationStopping");
+                    writter.Flush();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+
                 var client = new HttpClient();
                 client.Send(new HttpRequestMessage
                 {
@@ -67,6 +80,18 @@ namespace WebApplication3
 
             hostApplicationLifetime.ApplicationStopped.Register(() =>
             {
+                try
+                {
+                    var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
+                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}.txt");
+                    writter.Write($"{DateTime.UtcNow} => ApplicationStopped");
+                    writter.Flush();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+
                 var client = new HttpClient();
                 client.Send(new HttpRequestMessage
                 {
