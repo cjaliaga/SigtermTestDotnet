@@ -1,15 +1,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace WebApplication3
 {
@@ -56,9 +52,11 @@ namespace WebApplication3
 
             hostApplicationLifetime.ApplicationStopping.Register(() =>
             {
+                var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
+                Console.WriteLine($"Stopping Application on instance {instanceId} at {DateTime.UtcNow}");
+
                 try
                 {
-                    var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
                     using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}.txt");
                     writter.Write($"{DateTime.UtcNow} => ApplicationStopping");
                     writter.Flush();
@@ -76,23 +74,23 @@ namespace WebApplication3
                         Method = HttpMethod.Get,
                         RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING")
                     });
-                } 
-                catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
-                    var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
                     using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}-errors.txt");
                     writter.Write(ex);
                     writter.Flush();
                 }
 
-                Console.WriteLine("NOOOOOOOOOOOOOOOOOOOOOOO! BYEEEEEEEEEEEEEEEEEE :O");
             });
 
             hostApplicationLifetime.ApplicationStopped.Register(() =>
             {
+                var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
+                Console.WriteLine($"Application Stopped on instance {instanceId} at {DateTime.UtcNow}");
+
                 try
                 {
-                    var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
                     using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}.txt");
                     writter.Write($"{DateTime.UtcNow} => ApplicationStopped");
                     writter.Flush();
@@ -102,13 +100,21 @@ namespace WebApplication3
                     Console.WriteLine(ex);
                 }
 
-                var client = new HttpClient();
-                client.Send(new HttpRequestMessage
+                try
                 {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPED")
-                });
-                Console.WriteLine("I'M DONE!");
+                    var client = new HttpClient();
+                    client.Send(new HttpRequestMessage
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPED")
+                    });
+                }
+                catch (Exception ex)
+                {
+                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}-errors.txt");
+                    writter.Write(ex);
+                    writter.Flush();
+                }
             });
         }
     }
