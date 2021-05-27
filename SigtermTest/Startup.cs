@@ -68,12 +68,22 @@ namespace WebApplication3
                     Console.WriteLine(ex);
                 }
 
-                var client = new HttpClient();
-                client.Send(new HttpRequestMessage
+                try
                 {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING")
-                });
+                    var client = new HttpClient();
+                    client.Send(new HttpRequestMessage
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING")
+                    });
+                } 
+                catch(Exception ex)
+                {
+                    var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
+                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}-errors.txt");
+                    writter.Write(ex);
+                    writter.Flush();
+                }
 
                 Console.WriteLine("NOOOOOOOOOOOOOOOOOOOOOOO! BYEEEEEEEEEEEEEEEEEE :O");
             });
