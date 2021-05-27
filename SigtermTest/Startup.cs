@@ -14,9 +14,11 @@ namespace WebApplication3
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            OperationId = Guid.NewGuid();
         }
 
         public IConfiguration Configuration { get; }
+        public Guid OperationId { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -53,69 +55,103 @@ namespace WebApplication3
             hostApplicationLifetime.ApplicationStopping.Register(() =>
             {
                 var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
-                Console.WriteLine($"Stopping Application on instance {instanceId} at {DateTime.UtcNow}");
+                StreamWriter writer = null;
 
                 try
                 {
-                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}.txt");
-                    writter.WriteLine($"{DateTime.UtcNow} => ApplicationStopping");
-                    writter.Flush();
+                    writer = File.AppendText($"/home/site/wwwroot/{instanceId}.txt");
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    LogMessage(writer, ex.ToString());
                 }
 
-                try
+                LogMessage(writer, $"Stopping Application on instance {instanceId}");
+
+                if (Configuration.GetValue<bool>("MakeExternalCall"))
                 {
-                    var client = new HttpClient();
-                    client.Send(new HttpRequestMessage
+                    try
                     {
-                        Method = HttpMethod.Get,
-                        RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING")
-                    });
-                }
-                catch (Exception ex)
+                        var url = "https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING";
+                        LogMessage(writer, $"Doing HTTP Call to {url}");
+
+                        var client = new HttpClient();
+                        var response = client.Send(new HttpRequestMessage
+                        {
+                            Method = HttpMethod.Get,
+                            RequestUri = new Uri(url)
+                        });
+
+                        LogMessage(writer,  $"HTTP Call Response: {response.StatusCode}");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage(writer, ex.ToString());
+                    }
+                } 
+                else
                 {
-                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}-errors.txt");
-                    writter.WriteLine(ex);
-                    writter.Flush();
+                    LogMessage(writer, "External Call Disabled");
                 }
 
+                LogMessage(writer, "Stopping operation ended.");
             });
 
             hostApplicationLifetime.ApplicationStopped.Register(() =>
             {
                 var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
-                Console.WriteLine($"Application Stopped on instance {instanceId} at {DateTime.UtcNow}");
+                var message = $"{DateTime.UtcNow} | {OperationId} => Stopped Application on instance {instanceId}";
+                Console.WriteLine(message);
+                StreamWriter writer = null;
 
                 try
                 {
-                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}.txt");
-                    writter.WriteLine($"{DateTime.UtcNow} => ApplicationStopped");
-                    writter.Flush();
+                    writer = File.AppendText($"/home/site/wwwroot/{instanceId}.txt");
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                 }
 
-                try
+                writer?.WriteLine(message);
+                writer?.Flush();
+
+                if (Configuration.GetValue<bool>("MakeExternalCall"))
                 {
-                    var client = new HttpClient();
-                    client.Send(new HttpRequestMessage
+                    try
                     {
-                        Method = HttpMethod.Get,
-                        RequestUri = new Uri("https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPED")
-                    });
+                        var url = "https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPED";
+                        LogMessage(writer, $"Doing HTTP Call to {url}");
+
+                        var client = new HttpClient();
+                        var response = client.Send(new HttpRequestMessage
+                        {
+                            Method = HttpMethod.Get,
+                            RequestUri = new Uri(url)
+                        });
+
+                        LogMessage(writer, $"HTTP Call Response: {response.StatusCode}");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage(writer, ex.ToString());
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}-errors.txt");
-                    writter.WriteLine(ex);
-                    writter.Flush();
+                    LogMessage(writer, "External Call Disabled");
                 }
+
+                LogMessage(writer, "Stopped operation ended.");
             });
+        }
+
+        private void LogMessage(StreamWriter writer, string message)
+        {
+            message = $"{DateTime.UtcNow} | {OperationId} => {message}";
+            Console.WriteLine(message);
+            writer?.WriteLine(message);
+            writer?.Flush();
         }
     }
 }
