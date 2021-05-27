@@ -57,7 +57,7 @@ namespace WebApplication3
 
                 try
                 {
-                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}.txt");
+                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}.txt");
                     writter.Write($"{DateTime.UtcNow} => ApplicationStopping");
                     writter.Flush();
                 }
@@ -77,7 +77,7 @@ namespace WebApplication3
                 }
                 catch (Exception ex)
                 {
-                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}-errors.txt");
+                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}-errors.txt");
                     writter.Write(ex);
                     writter.Flush();
                 }
@@ -91,7 +91,7 @@ namespace WebApplication3
 
                 try
                 {
-                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}.txt");
+                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}.txt");
                     writter.Write($"{DateTime.UtcNow} => ApplicationStopped");
                     writter.Flush();
                 }
@@ -111,7 +111,7 @@ namespace WebApplication3
                 }
                 catch (Exception ex)
                 {
-                    using var writter = File.CreateText($"/home/site/wwwroot/{instanceId}-errors.txt");
+                    using var writter = File.AppendText($"/home/site/wwwroot/{instanceId}-errors.txt");
                     writter.Write(ex);
                     writter.Flush();
                 }
