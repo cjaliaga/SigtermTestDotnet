@@ -6,6 +6,8 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace WebApplication3
 {
@@ -68,19 +70,30 @@ namespace WebApplication3
 
                 LogMessage(writer, $"Stopping Application on instance {instanceId}");
 
+                var waitTime = Configuration.GetValue<int>("WaitTime");
+
+                if(waitTime > 0)
+                {
+                    LogMessage(writer, $"Waiting {waitTime}ms to simulate a long operation to see if the platform kills it before ending.");
+                    Task.Delay(waitTime).Wait();
+                    LogMessage(writer, $"Waited {waitTime}ms");
+                }
+
                 if (Configuration.GetValue<bool>("MakeExternalCall"))
                 {
                     try
                     {
+                        var cancelTime = Configuration.GetValue<int>("ExternalCallCancellationTime");
                         var url = "https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPING";
-                        LogMessage(writer, $"Doing HTTP Call to {url}");
+                        LogMessage(writer, $"Doing HTTP Call to {url} that will cancelled after {cancelTime}ms");
+                        CancellationTokenSource source = new(cancelTime);
 
                         var client = new HttpClient();
                         var response = client.Send(new HttpRequestMessage
                         {
                             Method = HttpMethod.Get,
                             RequestUri = new Uri(url)
-                        });
+                        }, source.Token);
 
                         LogMessage(writer,  $"HTTP Call Response: {response.StatusCode}");
                     }
@@ -100,8 +113,6 @@ namespace WebApplication3
             hostApplicationLifetime.ApplicationStopped.Register(() =>
             {
                 var instanceId = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
-                var message = $"{DateTime.UtcNow} | {OperationId} => Stopped Application on instance {instanceId}";
-                Console.WriteLine(message);
                 StreamWriter writer = null;
 
                 try
@@ -110,25 +121,35 @@ namespace WebApplication3
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    LogMessage(writer, ex.ToString());
                 }
 
-                writer?.WriteLine(message);
-                writer?.Flush();
+                LogMessage(writer, $"Stopped Application on instance {instanceId}");
+
+                var waitTime = Configuration.GetValue<int>("WaitTime");
+
+                if (waitTime > 0)
+                {
+                    LogMessage(writer, $"Waiting {waitTime}ms to simulate a long operation to see if the platform kills it before ending.");
+                    Task.Delay(waitTime).Wait();
+                    LogMessage(writer, $"Waited {waitTime}ms");
+                }
 
                 if (Configuration.GetValue<bool>("MakeExternalCall"))
                 {
                     try
                     {
+                        var cancelTime = Configuration.GetValue<int>("ExternalCallCancellationTime");
                         var url = "https://cjaliaga-psf.azurewebsites.net/api/HttpTrigger1?name=DOTNETSTOPPED";
-                        LogMessage(writer, $"Doing HTTP Call to {url}");
+                        LogMessage(writer, $"Doing HTTP Call to {url} that will cancelled after {cancelTime}ms");
+                        CancellationTokenSource source = new(cancelTime);
 
                         var client = new HttpClient();
                         var response = client.Send(new HttpRequestMessage
                         {
                             Method = HttpMethod.Get,
                             RequestUri = new Uri(url)
-                        });
+                        }, source.Token);
 
                         LogMessage(writer, $"HTTP Call Response: {response.StatusCode}");
                     }
@@ -148,7 +169,7 @@ namespace WebApplication3
 
         private void LogMessage(StreamWriter writer, string message)
         {
-            message = $"{DateTime.UtcNow} | {OperationId} => {message}";
+            message = $"{DateTime.UtcNow:o} | {OperationId} => {message}";
             Console.WriteLine(message);
             writer?.WriteLine(message);
             writer?.Flush();
